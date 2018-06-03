@@ -3,7 +3,7 @@
 namespace App\Util\ActivityPub;
 
 use App\Jobs\AvatarPipeline\CreateAvatar;
-use App\{Follower, Like, Profile, Like, Status, User};
+use App\{Follower, Like, Notification, Profile, Like, Status, User};
 
 class Inbox {
 
@@ -59,6 +59,10 @@ class Inbox {
         $actor = $this->payload['object'];
         $target = $this->profile;
 
+        $actorProfile = $this->actorFirstOrCreate($actor);
+
+        // TODO: Send notification to local user about Follow to Accept/Reject
+        $this->followActivityNotification($actorProfile);
     }
 
     public function actorFirstOrCreate($actorUrl)
@@ -83,6 +87,30 @@ class Inbox {
         $profile->remote_url = $res['url'];
         $profile->save();
 
+        CreateAvatar::dispatch($profile);
+
+        return $profile;
+    }
+
+    public function followActivityNotification(Profile $actor)
+    {
+        $this->followActivityAccept($actor);
+    }
+
+    public function followActivityAccept(Profile $actor)
+    {
+        $follower = new Follower;
+        $follower->profile_id = $actor->id;
+        $follower->following_id = $this->profile->id;
+        $follower->save();
+
+        $notification = new Notification;
+        $notification->profile_id = $target->id;
+        $notification->actor_id = $actor->id;
+        $notification->action = 'follow';
+        $notification->message = $follower->toText();
+        $notification->rendered = $follower->toHtml();
+        $notification->save();
     }
 
 }
