@@ -11,6 +11,10 @@ gosu www-data:www-data php artisan migrate --force
 # Run other specific migratins if required
 gosu www-data:www-data php artisan update
 
+# Update the cache
+gosu www-data:www-data php artisan config:cache
+gosu www-data:www-data php artisan route:cache
+
 # Run a worker if it is set as embedded
 if [ "$HORIZON_EMBED" = "true" ]; then
   gosu www-data:www-data php artisan horizon &
